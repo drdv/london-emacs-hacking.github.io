@@ -33,6 +33,10 @@ github]], open it in Emacs, and execute the code snippets by moving to a code
 block and pressing ~C-c C-c~. You can also open and edit the code block in
 emacs-lisp mode by pressing ~C-c '~.
 
+Some examples contain solutions that are hidden by default (for convenience) using a
+symmetric encription. If you want to see them, use ~M-x org-decrypt-entry~ on the
+heading (the password is ~s~).
+
 ** Resources to help
 
 If you're new to Elisp, the resources below can act as starting points or
@@ -78,40 +82,147 @@ Changes and new exercises are very welcome! Please [[https://github.com/london-e
 | [[Analyse a tic tac toe board]]                        |
 | [[Advice: 2 + 2 = 5]]                                  |
 
+** Library for results verification
+
+#+NAME: lib-verify-results
+#+begin_src emacs-lisp
+  (defun check-result (res ref)
+    (if (equal res ref)
+      (format "PASS: %s" res)
+    (format "FIXME: %s != %s" res ref)))
+
+  (defun show-results (tests-alist)
+    (mapcar (lambda (test)
+              (let ((res (funcall (car test)))
+  		  (ref (cdr test)))
+  	      (check-result res ref)))
+            tests-alist))
+#+end_src
+
 ** Strings - uppercase
 
 Transform the given string into uppercase:
 
-#+begin_src emacs-lisp
+#+NAME: example-strings-uppercase-tests
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<lib-verify-results>>
+
+  (setq tests '(((lambda () (__ "helloworld")) . "HELLOWORLD")))
+#+end_src
+
+#+NAME: example-strings-uppercase
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<example-strings-uppercase-tests>>
+
   (defun __ (s))
 
-  (let* ((result (__ "helloworld"))
-         (pass (string= result "HELLOWORLD")))
-    (format "Pass:%S\n%S" pass result))
+  (show-results tests)
 #+end_src
+
+*** Solutions
+:PROPERTIES:
+:CRYPTKEY: nil
+:END:
+
+#+NAME: example-strings-uppercase-solution
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-strings-uppercase-tests>>
+
+  (defun __ (s)
+    (upcase s))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-strings-uppercase-solution
+- PASS: HELLOWORLD
 
 ** Penultimate element
 
 Return the second last element in a list. If there is only one item in the
 list, return nil.
 
-#+begin_src emacs-lisp
-  (defun __ (li) nil)
+#+NAME: example-penultimate-element-tests
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<lib-verify-results>>
 
-  (let* ((result1 (__ '(1 2 3 4 5)))
-         (pass1 (equal result1 4))
-         (result2 (__ '("a" "b" "c")))
-         (pass2 (equal result2 "b"))
-         (result3 (__ '([1 2] [3 4])))
-         (pass3 (equal result3 [1 2]))
-         (result4 (__ '(1)))
-         (pass4 (equal result4 nil)))
+  (setq tests
+        '(((lambda () (__ '(1 2 3 4 5))) . 4)
+          ((lambda () (__ '("a" "b" "c"))) . "b")
+          ((lambda () (__ '([1 2] [3 4]))) . [1 2])
+          ((lambda () (__ '(1))) . nil)
+          ((lambda () (__ '())) . nil)))
+#+end_src
 
-    (format "Pass:%S\n%S\n\nPass:%S:\n%S\n\nPass:%S\n%S\n\nPass:%S\n%S"
-            pass1 result1 pass2 result2 pass3 result3 pass4 result4))
+#+NAME: example-penultimate-element
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<example-penultimate-element-tests>>
+
+  (defun __ (li))
+
+  (show-results tests)
 #+end_src
 
 (Ported from [[http://www.4clojure.com/problem/20][4Clojure #20]])
+
+*** Solutions
+:PROPERTIES:
+:CRYPTKEY: nil
+:END:
+
+#+NAME: example-penultimate-element-solution-1
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-penultimate-element-tests>>
+
+  (defun __ (li)
+    (cond ((= (length li) 2) (car li))
+  	((> (length li) 2) (__ (cdr li)))
+  	(t nil)))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-penultimate-element-solution-1
+- PASS: 4
+- PASS: b
+- PASS: [1 2]
+- PASS: nil
+- PASS: nil
+
+#+NAME: example-penultimate-element-solution-2
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-penultimate-element-tests>>
+
+  (defun __ (li)
+    (when (> (length li) 1)
+      (car (last li 2))))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-penultimate-element-solution-2
+- PASS: 4
+- PASS: b
+- PASS: [1 2]
+- PASS: nil
+- PASS: nil
+
+#+NAME: example-penultimate-element-solution-3
+#+begin_src emacs-lisp :noweb eval :results list
+    <<example-penultimate-element-tests>>
+
+  (defun __ (li)
+    (nth (abs (- (length li) 2)) li))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-penultimate-element-solution-3
+- PASS: 4
+- PASS: b
+- PASS: [1 2]
+- PASS: nil
+- PASS: nil
 
 ** Fizzbuzz
 
@@ -121,36 +232,158 @@ Return a list with the results of fizzbuzz for a range of 1-100. This means:
 - If the number is divisible by 5, the value is "Buzz".
 - If the number is divisible by 3 and 5, the value is "FizzBuzz".
 
-#+begin_src emacs-lisp
-  (defun __ () nil)
+#+NAME: example-fizzbuzz-tests
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<lib-verify-results>>
 
-  (let* ((expected '(1 2 "Fizz" 4 "Buzz" "Fizz" 7 8 "Fizz" "Buzz" 11 "Fizz" 13 14 "FizzBuzz" 16 17
-                       "Fizz" 19 "Buzz" "Fizz" 22 23 "Fizz" "Buzz" 26 "Fizz" 28 29 "FizzBuzz" 31 32
-                       "Fizz" 34 "Buzz" "Fizz" 37 38 "Fizz" "Buzz" 41 "Fizz" 43 44 "FizzBuzz" 46 47
-                       "Fizz" 49 "Buzz" "Fizz" 52 53 "Fizz" "Buzz" 56 "Fizz" 58 59 "FizzBuzz" 61 62
-                       "Fizz" 64 "Buzz" "Fizz" 67 68 "Fizz" "Buzz" 71 "Fizz" 73 74 "FizzBuzz" 76 77
-                       "Fizz" 79 "Buzz" "Fizz" 82 83 "Fizz" "Buzz" 86 "Fizz" 88 89 "FizzBuzz" 91 92
-                       "Fizz" 94 "Buzz" "Fizz" 97 98 "Fizz" "Buzz" ))
-         (result (__))
-         (pass (equal result expected)))
-    (format "Pass:%S\n%S" pass result))
+  (setq tests
+        '(((lambda () (__)).
+  	 (1 2 "Fizz" 4 "Buzz" "Fizz" 7 8 "Fizz" "Buzz" 11 "Fizz" 13 14 "FizzBuzz" 16 17
+  	    "Fizz" 19 "Buzz" "Fizz" 22 23 "Fizz" "Buzz" 26 "Fizz" 28 29 "FizzBuzz" 31 32
+  	    "Fizz" 34 "Buzz" "Fizz" 37 38 "Fizz" "Buzz" 41 "Fizz" 43 44 "FizzBuzz" 46 47
+  	    "Fizz" 49 "Buzz" "Fizz" 52 53 "Fizz" "Buzz" 56 "Fizz" 58 59 "FizzBuzz" 61 62
+  	    "Fizz" 64 "Buzz" "Fizz" 67 68 "Fizz" "Buzz" 71 "Fizz" 73 74 "FizzBuzz" 76 77
+  	    "Fizz" 79 "Buzz" "Fizz" 82 83 "Fizz" "Buzz" 86 "Fizz" 88 89 "FizzBuzz" 91 92
+  	    "Fizz" 94 "Buzz" "Fizz" 97 98 "Fizz" "Buzz" ))))
 #+end_src
+
+#+NAME: example-fizzbuzz
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<example-fizzbuzz-tests>>
+
+  (defun __ ())
+
+  (show-results tests)
+#+end_src
+
+*** Solutions
+:PROPERTIES:
+:CRYPTKEY: nil
+:END:
+
+#+NAME: example-fizzbuzz-solution
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-fizzbuzz-tests>>
+
+  (defun __ ()
+    (defun iter (k acc)
+      (defun fixbuzz-mapper (k)
+        (let ((is-divisible-by-3 (= (% k 3) 0))
+  	    (is-divisible-by-5 (= (% k 5) 0)))
+  	(cond ((and is-divisible-by-3
+  		    is-divisible-by-5)
+  	       "FizzBuzz")
+  	      (is-divisible-by-3 "Fizz")
+    	      (is-divisible-by-5 "Buzz")
+    	      (t k))))
+      (cond ((< k 1) acc)
+    	  (t (iter (- k 1)
+    		   (cons (fixbuzz-mapper k) acc)))))
+    (iter 100 nil))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-fizzbuzz-solution
+- PASS: (1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz 16 17 Fizz 19 Buzz Fizz 22 23 Fizz Buzz 26 Fizz 28 29 FizzBuzz 31 32 Fizz 34 Buzz Fizz 37 38 Fizz Buzz 41 Fizz 43 44 FizzBuzz 46 47 Fizz 49 Buzz Fizz 52 53 Fizz Buzz 56 Fizz 58 59 FizzBuzz 61 62 Fizz 64 Buzz Fizz 67 68 Fizz Buzz 71 Fizz 73 74 FizzBuzz 76 77 Fizz 79 Buzz Fizz 82 83 Fizz Buzz 86 Fizz 88 89 FizzBuzz 91 92 Fizz 94 Buzz Fizz 97 98 Fizz Buzz)
 
 ** Flatten an arbitrarily nested list
 
 Pull out all the nested elements into a single list:
 
-#+begin_src emacs-lisp
+#+NAME: example-flatten-arbitrary-nested-list-tests
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<lib-verify-results>>
+
+  (setq tests '(((lambda () (__ '(1 2 3))) . (1 2 3))
+  	      ((lambda () (__ '(1 2 (3 4) (5 (6 (7)))))) . (1 2 3 4 5 6 7))
+  	      ((lambda () (__ '("a" "b") '(c nil d) '(1 (2 3 (4 5))))) . ("a" "b" c d 1 2 3 4 5))))
+#+end_src
+
+#+NAME: example-flatten-arbitrary-nested-list
+#+begin_src emacs-lisp :noweb eval :results silent
+  <<example-flatten-arbitrary-nested-list-tests>>
+
   (defun __ (a &rest b))
 
-  (let* ((result1 (__ '(1 2 3)))
-         (pass1 (equal result1 '(1 2 3)))
-         (result2 (__ '(1 2 (3 4) (5 (6 (7))))))
-         (pass2 (equal result2 '(1 2 3 4 5 6 7)))
-         (result3 (__ '("a" "b") '(c nil d) '(1 (2 3 (4 5)))))
-         (pass3 (equal result3 '("a" "b" c d 1 2 3 4 5))))
-    (format "Pass:%S\n%S\nPass:%S\n%S\nPass:%S\n%S" pass1 result1 pass2 result2 pass3 result3))
+  (show-results tests)
 #+end_src
+
+*** Solutions
+:PROPERTIES:
+:CRYPTKEY: nil
+:END:
+
+#+NAME: example-flatten-arbitrary-nested-list-solution-1
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-flatten-arbitrary-nested-list-tests>>
+
+  (defun __ (a &rest b)
+    (defun flatten (lst acc)
+      (if lst
+  	(let ((head (car lst))
+  	      (rest (cdr lst)))
+  	  (cond ((consp head)
+  		 (let ((head-rest (cdr head)))
+  		   ;; pull out first element of head
+  		   (flatten (cons (car head)
+  				  (if head-rest
+  				      (cons head-rest rest)
+  				    rest))
+  			    acc)))
+  		(t (flatten rest (if head
+  				     (cons head acc)
+  				   acc)))))
+        acc))
+    (reverse (flatten (cons a b) '())))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-flatten-arbitrary-nested-list-solution-1
+- PASS: (1 2 3)
+- PASS: (1 2 3 4 5 6 7)
+- PASS: (a b c d 1 2 3 4 5)
+
+#+NAME: example-flatten-arbitrary-nested-list-solution-2
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-flatten-arbitrary-nested-list-tests>>
+
+  (defun __ (a &rest b)
+    (defun flatten (lst)
+      (when lst
+        (let ((head (car lst))
+  	    (rest (cdr lst)))
+  	(cond
+  	 ((consp head)
+  	  (append (flatten head) (flatten rest)))
+  	 (t (if head
+  		(cons head (flatten rest))
+  	      (flatten rest)))))))
+    (flatten (cons a b)))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-flatten-arbitrary-nested-list-solution-2
+- PASS: (1 2 3)
+- PASS: (1 2 3 4 5 6 7)
+- PASS: (a b c d 1 2 3 4 5)
+
+#+NAME: example-flatten-arbitrary-nested-list-solution-3
+#+begin_src emacs-lisp :noweb eval :results list
+  <<example-flatten-arbitrary-nested-list-tests>>
+
+  (defun __ (a &rest b)
+    (flatten-tree (cons a b)))
+
+  (show-results tests)
+#+end_src
+
+#+RESULTS: example-flatten-arbitrary-nested-list-solution-3
+- PASS: (1 2 3)
+- PASS: (1 2 3 4 5 6 7)
+- PASS: (a b c d 1 2 3 4 5)
 
 ** Convert a list into a hash table
 
